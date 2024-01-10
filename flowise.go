@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"errors"
 )
 
 func QueryFlowise(query string, author string, destinatary string, flowiseApi string, flowiseKey string) (string, error) {
@@ -16,6 +17,10 @@ func QueryFlowise(query string, author string, destinatary string, flowiseApi st
 
 	type FlowiseQuery struct {
 		Question string `json:"question"`
+	}
+
+	type FlowiseResponse struct {
+    Text string `json:"text"`
 	}
 
 	body := &FlowiseQuery{
@@ -47,11 +52,23 @@ func QueryFlowise(query string, author string, destinatary string, flowiseApi st
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
-		return "", err
+			fmt.Println(err)
+			return "", err
 	}
 
-	respStr := strings.Trim(string(respBody), "\"")
+	var jsonResponse map[string]interface{}
+	err = json.Unmarshal(respBody, &jsonResponse)
+	if err != nil {
+			fmt.Println(err)
+			return "", err
+	}
+
+	respStr := ""
+	if text, ok := jsonResponse["text"].(string); ok {
+			respStr = strings.Trim(text, "\"")
+	} else {
+			return "", errors.New("key 'text' not found or is not a string")
+	}
 
 	fmt.Println(respStr)
 
